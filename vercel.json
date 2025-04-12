@@ -1,0 +1,11 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/update-data",
+      "schedule": "0 2 * * *",
+      "headers": {
+        "x-cron-api-key": "${CRON_SECRET}"
+      }
+    }
+  ]
+}
