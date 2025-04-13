@@ -35,7 +35,7 @@ export async function getProductsByCategory(
 // Helper function to get all categories
 export async function getAllCategories(): Promise<string[]> {
   const result =
-    await sql`SELECT DISTINCT type FROM products ORDER BY type asc`;
+    await sql`SELECT DISTINCT type FROM products WHERE type IS NOT NULL AND type != '' ORDER BY type asc`;
 
   return result.map((row: any) => row.type);
 }
