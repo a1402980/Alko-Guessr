@@ -291,13 +291,13 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
           pointerEvents: isFinished && isOnlyOnce ? "none" : "auto",
         }}
       />
-      {((showTextOnSpin && isFinished) || isStarted) && (
+      {((showTextOnSpin && isStarted) || isFinished) && (
         <div
           style={{
             textAlign: "center",
             padding: "20px",
             fontWeight: "bold",
-            fontSize: "1.5em",
+            fontSize: "1em",
             fontFamily: fontFamily,
           }}
         >

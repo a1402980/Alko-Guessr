@@ -65,6 +65,7 @@ export function Header() {
       >
         {menuLinks.map((link) => (
           <Link
+            key={link.label}
             href={link.href}
             className="text-sm font-medium transition-colors hover:text-primary"
             onClick={() => setIsMenuOpen(false)}
