@@ -32,3 +32,7 @@ export const productSchema = z.object({
 });
 
 export const productsSchema = z.array(productSchema);
+
+export const integrationProductSchema = productSchema.omit({
+  id: true,
+});

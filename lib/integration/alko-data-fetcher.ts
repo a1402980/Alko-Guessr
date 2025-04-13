@@ -2,8 +2,10 @@ import * as XLSX from "xlsx";
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { sql } from "../db";
-import { Product } from "@/types/product";
-import { productsSchema } from "@/schemas/product";
+import { IntegrationProduct } from "@/types/product";
+import fs from "fs";
+import path from "path";
+import { productFromAlkoData } from "./alko";
 
 puppeteer.use(StealthPlugin());
 
@@ -20,8 +22,6 @@ export async function fetchAndProcessAlkoData() {
     // Fetch the Excel file
     const arrayBuffer = await fetchFileWithPuppeteer(productUrl);
 
-    console.log(typeof arrayBuffer);
-
     const workbook = XLSX.read(arrayBuffer);
 
     // Get the first sheet
@@ -33,40 +33,8 @@ export async function fetchAndProcessAlkoData() {
 
     console.log(`Processed ${data.length} products from Alko data`);
 
-    console.log("Data sample:", data.slice(0, 10));
-
     // Map the data to our product schema
-    const productData = data.map((row: any) => ({
-      product_id: row["Numero"] || "",
-      name: row["Nimi"] || "",
-      manufacturer: row["Valmistaja"] || "",
-      bottle_size: row["Pullokoko"] || "",
-      price: Number.parseFloat(row["Hinta"] || 0),
-      price_per_liter: Number.parseFloat(row["Litrahinta"] || 0),
-      is_new: row["Uutuus"] === "uutuus",
-      price_order_code: row["Hinnastojärjestyskoodi"] || "",
-      type: row["Tyyppi"] || "",
-      sub_type: row["Alatyyppi"] || "",
-      special_group: row["Erityisryhmä"] || "",
-      country: row["Valmistusmaa"] || "",
-      region: row["Alue"] || "",
-      vintage: row["Vuosikerta"] || "",
-      label_notes: row["Etikettimerkintöjä"] || "",
-      notes: row["Huomautus"] || "",
-      grapes: row["Rypäleet"] || "",
-      description: row["Luonnehdinta"] || "",
-      packaging_type: row["Pakkaustyyppi"] || "",
-      closure_type: row["Suljentatyyppi"] || "",
-      alcohol_percentage: Number.parseFloat(row["Alkoholi-%"] || 0),
-      acidity: Number.parseFloat(row["Hapot g/l"] || 0),
-      sugar: Number.parseFloat(row["Sokeri g/l"] || 0),
-      energy: Number.parseFloat(row["Energia kcal/100 ml"] || 0),
-      selection: row["Valikoima"] || "",
-      ean: row["EAN"] || "",
-    }));
-
-    // Filter out invalid products
-    const products = productsSchema.parse(productData);
+    const products = data.map(productFromAlkoData);
 
     console.log(`Found ${products.length} valid products`);
 
@@ -86,7 +54,7 @@ export async function fetchAndProcessAlkoData() {
   }
 }
 
-export async function insertProductsToDatabase(products: Product[]) {
+export async function insertProductsToDatabase(products: IntegrationProduct[]) {
   console.log("Inserting products to database...");
 
   // Process in batches to avoid overwhelming the database
@@ -156,7 +124,7 @@ export async function insertProductsToDatabase(products: Product[]) {
             ${product.energy},
             ${product.selection},
             ${product.ean},
-            ${`https://images.alko.fi/images/cs_srgb,f_auto,t_medium/cdn/${product.product_id}/.jpg`}
+            ${product.image_url}
           )
           ON CONFLICT (product_id) 
           DO UPDATE SET 
@@ -205,9 +173,11 @@ async function fetchFileWithPuppeteer(url: string): Promise<Uint8Array> {
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
-  const page = await browser.newPage();
 
-  console.log(`Navigating to URL: ${url}`);
+  const downloadPath = path.resolve(process.cwd(), "data", "downloads");
+  fs.mkdirSync(downloadPath, { recursive: true });
+
+  const page = await browser.newPage();
   await page.setUserAgent(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
   );
@@ -217,31 +187,45 @@ async function fetchFileWithPuppeteer(url: string): Promise<Uint8Array> {
     Origin: "https://www.alko.fi",
   });
 
-  await page.goto(url, { waitUntil: "networkidle2" });
+  const client = await page.createCDPSession();
 
-  // Save the page content for debugging
-  const pageContent = await page.content();
-  require("fs").writeFileSync("debug-page.html", pageContent);
-  console.log("Page content saved as debug-page.html");
-
-  // Fetch the file
-  const fileBuffer = await page.evaluate(async () => {
-    const response = await fetch(location.href);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file. Status: ${response.status}`);
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    return Array.from(new Uint8Array(arrayBuffer));
+  // Enable file downloads
+  await client.send("Page.setDownloadBehavior", {
+    behavior: "allow",
+    downloadPath,
   });
 
-  console.log("Fetched file size:", fileBuffer.length);
+  // Navigate to the URL but catch the ERR_ABORTED error
+  try {
+    await page.goto(url, { waitUntil: "networkidle2" });
+  } catch (error: any) {
+    if (
+      !(error instanceof Error) ||
+      !error.message.includes("net::ERR_ABORTED")
+    ) {
+      console.error("Unexpected error during navigation:", error);
+      throw error;
+    }
+    // Ignore net::ERR_ABORTED as it is expected for file downloads
+  }
 
-  const uint8Array = new Uint8Array(fileBuffer);
+  console.log("Waiting for the file to download...");
+  const fileName = "alkon-hinnasto-tekstitiedostona.xlsx";
+  const filePath = path.join(downloadPath, fileName);
 
-  const fs = require("fs");
-  fs.writeFileSync("debug-file.xlsx", Buffer.from(uint8Array));
-  console.log("File saved as debug-file.xlsx");
+  // Wait for the file to appear in the download directory
+  while (!fs.existsSync(filePath)) {
+    await new Promise((resolve) => setTimeout(resolve, 100)); // Poll every 100ms
+  }
+
+  console.log(`File downloaded to: ${filePath}`);
+
+  // Read the file into a buffer
+  const fileBuffer = fs.readFileSync(filePath);
+
+  /*   // Clean up: delete the downloaded file
+  fs.unlinkSync(filePath); */
 
   await browser.close();
-  return uint8Array;
+  return new Uint8Array(fileBuffer);
 }
