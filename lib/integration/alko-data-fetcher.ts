@@ -5,6 +5,8 @@ import { IntegrationProduct } from "@/types/product";
 import fs from "fs";
 import path from "path";
 import { productFromAlkoData } from "./alko";
+import chromium from "@sparticuz/chromium";
+import puppeteerCore from "puppeteer-core";
 
 const productUrl = process.env.ALKO_PRODUCTS_URL;
 
@@ -166,10 +168,21 @@ export async function insertProductsToDatabase(products: IntegrationProduct[]) {
 }
 
 async function fetchFileWithPuppeteer(url: string): Promise<Uint8Array> {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
+  let browser;
+
+  if (process.env.NODE_ENV === "production") {
+    browser = await puppeteerCore.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+  } else {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+  }
 
   const downloadPath = path.resolve(process.cwd(), "data", "downloads");
   fs.mkdirSync(downloadPath, { recursive: true });
