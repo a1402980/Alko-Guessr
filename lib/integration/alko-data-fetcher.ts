@@ -1,13 +1,10 @@
 import * as XLSX from "xlsx";
 import puppeteer from "puppeteer-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { sql } from "../db";
 import { IntegrationProduct } from "@/types/product";
 import fs from "fs";
 import path from "path";
 import { productFromAlkoData } from "./alko";
-
-puppeteer.use(StealthPlugin());
 
 const productUrl = process.env.ALKO_PRODUCTS_URL;
 

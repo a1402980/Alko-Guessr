@@ -50,7 +50,6 @@
     "next-themes": "latest",
     "puppeteer": "^24.6.1",
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "react": "^19",
     "react-dom": "^19",
     "react-hook-form": "^7.54.1",
