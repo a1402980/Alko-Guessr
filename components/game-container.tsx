@@ -269,7 +269,7 @@ export function GameContainer({ category }: { category?: string }) {
         {!loading && (
           <div className="space-y-8">
             <div className="flex justify-center">
-              <div className="relative w-full max-w-md aspect-square rounded-lg overflow-hidden">
+              <div className="relative w-full max-w-md aspect-square rounded-lg overflow-hidden bg-white">
                 <Image
                   src={
                     gameState.correctAnswer?.image_url ||
@@ -278,7 +278,7 @@ export function GameContainer({ category }: { category?: string }) {
                   fill
                   sizes="(max-width: 768px) 100vw, 400px"
                   alt="Guess the product"
-                  className={`w-full h-full object-contain blur-image blur-${gameState.blurLevel}`}
+                  className={`p-2 w-full h-full object-contain blur-image blur-${gameState.blurLevel}`}
                   loading="eager"
                   priority
                 />

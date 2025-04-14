@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { isEqual } from "lodash";
 
 export type Segments = {
   segmentText: string;
@@ -29,7 +30,6 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
   primaryColor = "black",
   contrastColor = "white",
   buttonText = "Spin",
-  isOnlyOnce = false,
   size = 290,
   upDuration = 100,
   downDuration = 600,
@@ -38,17 +38,38 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
   showTextOnSpin = true,
   isSpinSound = true,
 }: SpinWheelProps) => {
-  // Separate arrays without nullish values
-  const segmentTextArray = segments
-    .map((segment) => segment.segmentText)
-    .filter(Boolean);
-  const segColorArray = segments
-    .map((segment) => segment.segColor)
-    .filter(Boolean);
-
+  const [wheelSize, setWheelSize] = useState<number>(size); // State for wheel size
   const [isFinished, setFinished] = useState<boolean>(false);
   const [isStarted, setIsStarted] = useState<boolean>(false);
   const [needleText, setNeedleText] = useState<string>("");
+
+  const [segmentTextArray, setSegmentTextArray] = useState<string[]>([]);
+  const [segColorArray, setSegColorArray] = useState<string[]>([]);
+  const prevSegmentsRef = useRef<Segments[]>(segments); // Store the previous segments for comparison
+
+  useEffect(() => {
+    setWheelSize(size);
+  }, [size]);
+
+  useEffect(() => {
+    // Only update if segments actually change
+    if (
+      (!segmentTextArray.length && !segColorArray.length) ||
+      !isEqual(prevSegmentsRef.current, segments)
+    ) {
+      prevSegmentsRef.current = segments; // Update the reference
+      const updatedTextArray = segments
+        .map((segment) => segment.segmentText)
+        .filter(Boolean);
+      const updatedColorArray = segments
+        .map((segment) => segment.segColor)
+        .filter(Boolean)
+        .filter((color): color is string => typeof color === "string");
+
+      setSegmentTextArray(updatedTextArray);
+      setSegColorArray(updatedColorArray);
+    }
+  }, [segments]);
 
   const [ticTicSound, seTicTicSound] = useState<HTMLAudioElement | null>(null);
 
@@ -66,8 +87,8 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
   let spinStart = 0;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let frames = 0;
-  const centerX = size;
-  const centerY = size;
+  const centerX = wheelSize;
+  const centerY = wheelSize;
 
   const wheelInit = () => {
     initCanvas();
@@ -75,11 +96,11 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
   };
 
   useEffect(() => {
-    wheelInit();
-    setTimeout(() => {
-      window.scrollTo(0, 1);
-    }, 0);
-  }, []);
+    // Initialize the wheel only after segment arrays are updated
+    if (segmentTextArray.length > 0 && segColorArray.length > 0) {
+      wheelInit();
+    }
+  }, [segmentTextArray, segColorArray, wheelSize]);
 
   useEffect(() => {
     if (isSpinSound) {
@@ -111,19 +132,29 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
   }, [isStarted, isFinished]);
 
   const initCanvas = () => {
-    let canvas: HTMLCanvasElement | null = document.getElementById(
+    // Remove the old canvas if it exists
+    const existingCanvas = document.getElementById(
       "canvas"
     ) as HTMLCanvasElement;
-
-    if (!canvas) {
-      // Create a new canvas if it doesn't exist
-      canvas = document.createElement("canvas");
-      canvas.setAttribute("width", `${size * 2}`);
-      canvas.setAttribute("height", `${size * 2}`);
-      canvas.setAttribute("id", "canvas");
-      document?.getElementById("wheel")?.appendChild(canvas);
+    if (existingCanvas) {
+      existingCanvas.remove();
     }
+    // Create a new canvas
+    const canvas = document.createElement("canvas");
+    canvas.setAttribute("id", "canvas");
+    document?.getElementById("wheel")?.prepend(canvas); // Append to the "wheel" container
+
+    const pixelRatio = window.devicePixelRatio || 1; // Get the device pixel ratio
+    canvas.width = wheelSize * 2 * pixelRatio; // Scale canvas width
+    canvas.height = wheelSize * 2 * pixelRatio; // Scale canvas height
+    canvas.style.width = `${wheelSize * 2}px`; // Set CSS width
+    canvas.style.height = `${wheelSize * 2}px`; // Set CSS height
+
     canvasContext = canvas.getContext("2d");
+    if (canvasContext) {
+      canvasContext.setTransform(1, 0, 0, 1, 0, 0); // Reset the transformation matrix
+      canvasContext.scale(pixelRatio, pixelRatio); // Scale the context to match the pixel ratio
+    }
 
     canvas.style.borderRadius = "50%"; // Set border radius for a circular shape
 
@@ -169,7 +200,8 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
   };
 
   const wheelDraw = () => {
-    clear();
+    reset(); // Reset wheel position
+    clear(); // Clear the canvas
     drawWheelBase(); // Draw the wheel and segments
     drawNeedle(); // Draw the needle
     drawCenterCircle(); // Draw the center circle last to ensure it's on top
@@ -178,10 +210,12 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
   const drawSegment = (key: number, lastAngle: number, angle: number) => {
     const ctx = canvasContext;
     const value = segmentTextArray[key];
+    const fontSize = Math.max(wheelSize * 0.05, 8); // Scale font size, with a minimum of 15px
+
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, size, lastAngle, angle, false);
+    ctx.arc(centerX, centerY, wheelSize, lastAngle, angle, false);
     ctx.lineTo(centerX, centerY);
     ctx.closePath();
     ctx.fillStyle = segColorArray[key];
@@ -191,8 +225,8 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
     ctx.translate(centerX, centerY);
     ctx.rotate((lastAngle + angle) / 2);
     ctx.fillStyle = contrastColor;
-    ctx.font = "bold 1em " + fontFamily;
-    ctx.fillText(value.substring(0, 21), size / 2 + 20, 0);
+    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+    ctx.fillText(value.substring(0, 21), wheelSize / 2 + 20, 0);
     ctx.restore();
   };
 
@@ -215,7 +249,7 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
 
     // Draw outer circle
     ctx.beginPath();
-    ctx.arc(centerX, centerY, size, 0, PI2, false);
+    ctx.arc(centerX, centerY, wheelSize, 0, PI2, false);
     ctx.closePath();
     ctx.lineWidth = 4;
     ctx.strokeStyle = primaryColor;
@@ -226,6 +260,8 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
     const ctx = canvasContext;
     const PI2 = Math.PI * 2;
 
+    const fontSize = Math.max(wheelSize * 0.05, 15); // Scale font size, with a minimum of 15px
+
     // Draw the center circle
     ctx.beginPath();
     ctx.arc(centerX, centerY, 30, 0, PI2, false);
@@ -234,7 +270,7 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
     ctx.lineWidth = 2;
     ctx.strokeStyle = contrastColor;
     ctx.fill();
-    ctx.font = "bold 1em " + fontFamily;
+    ctx.font = `bold ${fontSize}px ${fontFamily}`;
     ctx.fillStyle = contrastColor;
     ctx.textAlign = "center";
     ctx.fillText(buttonText, centerX, centerY + 3);
@@ -278,19 +314,27 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
 
   const clear = () => {
     const ctx = canvasContext;
-    ctx.clearRect(0, 0, size, size);
+    if (ctx) {
+      ctx.clearRect(
+        0,
+        0,
+        canvasContext.canvas.width,
+        canvasContext.canvas.height
+      ); // Clear the entire canvas
+    }
+  };
+
+  const reset = () => {
+    const ctx = canvasContext;
+    if (ctx) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformations
+      const pixelRatio = window.devicePixelRatio || 1;
+      ctx.scale(pixelRatio, pixelRatio); // Reapply scaling for high-DPI screens
+    }
   };
 
   return (
-    <div className="flex flex-col items-center">
-      <canvas
-        id="canvas"
-        width={size * 2}
-        height={size * 2}
-        style={{
-          pointerEvents: isFinished && isOnlyOnce ? "none" : "auto",
-        }}
-      />
+    <div className="flex flex-col items-center" id="wheel">
       {((showTextOnSpin && isStarted) || isFinished) && (
         <div
           style={{
@@ -299,6 +343,7 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
             fontWeight: "bold",
             fontSize: "1em",
             fontFamily: fontFamily,
+            maxWidth: wheelSize * 2,
           }}
         >
           {needleText}

@@ -14,9 +14,10 @@ export function Header() {
   };
 
   const menuLinks = [
-    { href: "/play", label: "Play" },
-    { href: "/leaderboard", label: "Leaderboard" },
-    { href: "/about", label: "About" },
+    { href: "/play/", label: "Play" },
+    { href: "/spinner/", label: "Spinner" },
+    { href: "/leaderboard/", label: "Leaderboard" },
+    { href: "/about/", label: "About" },
   ];
 
   return (

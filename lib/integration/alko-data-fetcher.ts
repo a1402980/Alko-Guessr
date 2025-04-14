@@ -171,6 +171,7 @@ async function fetchFileWithPuppeteer(url: string): Promise<Uint8Array> {
   let browser;
 
   if (process.env.NODE_ENV === "production") {
+    // For production, we need to use this to have chromium on our serverless enviroment
     browser = await puppeteerCore.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
@@ -232,9 +233,6 @@ async function fetchFileWithPuppeteer(url: string): Promise<Uint8Array> {
 
   // Read the file into a buffer
   const fileBuffer = fs.readFileSync(filePath);
-
-  /*   // Clean up: delete the downloaded file
-  fs.unlinkSync(filePath); */
 
   await browser.close();
   return new Uint8Array(fileBuffer);
