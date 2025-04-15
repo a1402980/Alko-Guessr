@@ -280,7 +280,7 @@ export function GameContainer({ category }: { category?: string }) {
                   fill
                   sizes="(max-width: 768px) 100vw, 400px"
                   alt="Guess the product"
-                  className={`p-2 w-full h-full object-contain blur-image blur-${gameState.blurLevel}`}
+                  className={`pointer-events-none p-2 w-full h-full object-contain blur-image blur-${gameState.blurLevel}`}
                   loading="eager"
                   priority
                 />
