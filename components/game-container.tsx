@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -49,6 +49,7 @@ export function GameContainer({ category }: { category?: string }) {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const blurTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const router = useRouter();
 
   // Load initial game data
@@ -81,6 +82,31 @@ export function GameContainer({ category }: { category?: string }) {
       if (blurTimerRef.current) clearInterval(blurTimerRef.current);
     };
   }, [category, gameState.currentRound]);
+
+  // Anti cheat. Check for disabling of blur
+  useEffect(() => {
+    if (!imageRef.current) return;
+
+    // Periodic check for computed styles
+    const intervalId = setInterval(() => {
+      if (!imageRef.current) return;
+
+      const computedStyle = window.getComputedStyle(imageRef.current);
+      const filterValue = computedStyle.filter;
+
+      if (!filterValue.includes("blur")) {
+        // User tampered with the blur, reset it
+        console.warn("Blur tampering detected! Adding extra blur and color!");
+        if (imageRef.current) {
+          imageRef.current.style.filter = `invert(75%) blur(20px)`;
+        }
+      }
+    }, 100); // Check every 100ms
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [gameState.blurLevel]);
 
   function startRound() {
     // Start the timer
@@ -273,6 +299,7 @@ export function GameContainer({ category }: { category?: string }) {
             <div className="flex justify-center">
               <div className="relative w-full max-w-md aspect-square rounded-lg overflow-hidden bg-white">
                 <Image
+                  ref={imageRef}
                   src={
                     gameState.correctAnswer?.image_url ||
                     "/placeholder.svg?height=400&width=400"

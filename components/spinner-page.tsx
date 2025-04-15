@@ -61,8 +61,6 @@ const SpinnerPage = ({
     const min = parseFloat(priceMin) || undefined;
     const max = parseFloat(priceMax) || undefined;
 
-    console.log(selectedCategory, min, max, selectedBottleSize);
-
     const newProducats = await getProducts({
       category: selectedCategory,
       priceMax: max,
@@ -179,12 +177,7 @@ const SpinnerPage = ({
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-                >
-                  Filter
-                </button>
+                <Button type="submit">Filter</Button>
               </form>
             )}
 
