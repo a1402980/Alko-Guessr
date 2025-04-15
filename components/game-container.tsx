@@ -154,13 +154,17 @@ export function GameContainer({ category }: { category?: string }) {
     if (isCorrect) playEffect("correct");
     else playEffect("wrong");
 
-    setGameState((prev) => ({
-      ...prev,
-      selectedAnswer: optionId,
-      roundComplete: true,
-      blurLevel: 0,
-      score: isCorrect ? prev.score + prev.timeLeft * 10 : prev.score,
-    }));
+    setGameState((prev) => {
+      const effectiveTimeLeft =
+        prev.timeLeft >= ROUND_TIME - 2 ? ROUND_TIME : prev.timeLeft; // 2 second Grace period logic
+      return {
+        ...prev,
+        selectedAnswer: optionId,
+        roundComplete: true,
+        blurLevel: 0,
+        score: isCorrect ? prev.score + effectiveTimeLeft * 10 : prev.score,
+      };
+    });
 
     if (timerRef.current) clearInterval(timerRef.current);
     if (blurTimerRef.current) clearInterval(blurTimerRef.current);
