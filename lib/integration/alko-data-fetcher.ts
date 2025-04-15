@@ -75,7 +75,9 @@ export async function insertTypesIntoDatabase(types: FormattedType[]) {
               ${type.slug}
             )
             ON CONFLICT (slug) 
-            DO NOTHING
+            DO UPDATE SET 
+              name = EXCLUDED.name,
+              name_en = EXCLUDED.name_en
           `
     );
     return queries;

@@ -47,7 +47,7 @@ export const typesFromProducts = (
   const translationMap: Record<string, string> = {
     Viinijuomat: "Wine Drinks",
     Alkoholittomat: "Non-Alcoholic",
-    Brandyt: "Brandies, Armagnacs, And Calvados",
+    "Brandyt, armanjakit ja calvadosit": "Brandies, Armagnacs, And Calvados",
     "Ginit ja maustetut viinat": "Gins And Flavored Spirits",
     Hanapakkaukset: "Bag-In-Box Packages",
     Juomasekoitukset: "Cocktails",
