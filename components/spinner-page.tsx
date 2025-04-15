@@ -1,6 +1,6 @@
 "use client";
 
-import { Product } from "@/types/product";
+import { FormattedType, Product } from "@/types/product";
 import SpinningWheel, { Segments } from "./spinning-wheel";
 import { Header } from "./header";
 import { Footer } from "./footer";
@@ -14,14 +14,8 @@ import {
 } from "./ui/select";
 import { useIsMobile } from "./ui/use-mobile";
 import { Input } from "./ui/input";
-import { getProducts, getProductsByCategory } from "@/actions/db";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "./ui/dialog";
+import { getProducts } from "@/actions/db";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 import { Button } from "./ui/button";
@@ -29,7 +23,7 @@ import { playEffect } from "@/lib/effects";
 
 type Props = {
   products: Product[];
-  categories: string[];
+  categories: FormattedType[];
   bottleSizes: string[];
 };
 
@@ -133,8 +127,8 @@ const SpinnerPage = ({
                         None
                       </SelectItem>
                       {categories.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
+                        <SelectItem key={c.slug} value={c.name}>
+                          {c.name_en}
                         </SelectItem>
                       ))}
                     </SelectContent>

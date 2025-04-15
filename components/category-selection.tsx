@@ -13,9 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAllCategories } from "@/actions/db";
+import { FormattedType } from "@/types/product";
 
 export function CategorySelection() {
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<FormattedType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,17 +70,20 @@ export function CategorySelection() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {categories.map((category) => (
-            <Card key={category} className="overflow-hidden">
+            <Card key={category.slug} className="overflow-hidden">
               <CardHeader>
-                <CardTitle>{category}</CardTitle>
+                <CardTitle>{category.name_en}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>
-                  Test your knowledge of {category.toLowerCase()}
+                  Test your knowledge of {category.name_en.toLocaleLowerCase()}
                 </CardDescription>
               </CardContent>
               <CardFooter>
-                <Link href={`/play?category=${category}`} className="w-full">
+                <Link
+                  href={`/play?category=${category.name}`}
+                  className="w-full"
+                >
                   <Button className="w-full">Play</Button>
                 </Link>
               </CardFooter>

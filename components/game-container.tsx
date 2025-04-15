@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AudioToggle } from "@/components/audio-toggle";
-import { ExternalLink, Loader2, Save } from "lucide-react";
+import { ChevronRight, ExternalLink, Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Product } from "@/types/product";
 import { getProductsByCategory, submitScore } from "@/actions/db";
@@ -287,7 +287,28 @@ export function GameContainer({ category }: { category?: string }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {gameState.roundComplete && (
+              <div className="flex justify-center gap-8">
+                <a
+                  href={`https://www.alko.fi/tuotteet/${gameState.correctAnswer?.product_id}/`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant={"outline"}>
+                    View product <ExternalLink />
+                  </Button>
+                </a>
+
+                <Button onClick={handleNextRound}>
+                  {gameState.currentRound + 1 >= TOTAL_ROUNDS
+                    ? "See Results"
+                    : "Next Round"}
+                  <ChevronRight />
+                </Button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
               {gameState.options.map((option) => (
                 <Button
                   key={option.id}
@@ -306,32 +327,14 @@ export function GameContainer({ category }: { category?: string }) {
                   disabled={gameState.roundComplete}
                 >
                   <div className="flex flex-col">
-                    <span className="font-bold">{option.name}</span>
+                    <span className="font-bold whitespace-break-spaces">
+                      {option.name}
+                    </span>
                     <span className="text-sm">{option.price.toFixed(2)} €</span>
                   </div>
                 </Button>
               ))}
             </div>
-
-            {gameState.roundComplete && (
-              <div className="flex justify-center gap-8">
-                <a
-                  href={`https://www.alko.fi/tuotteet/${gameState.correctAnswer?.product_id}/`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant={"outline"}>
-                    View product <ExternalLink />
-                  </Button>
-                </a>
-
-                <Button onClick={handleNextRound}>
-                  {gameState.currentRound + 1 >= TOTAL_ROUNDS
-                    ? "See Results"
-                    : "Next Round"}
-                </Button>
-              </div>
-            )}
           </div>
         )}
       </div>

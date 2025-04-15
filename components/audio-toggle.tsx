@@ -10,7 +10,7 @@ export function AudioToggle() {
 
   useEffect(() => {
     // Create audio element
-    audioRef.current = new Audio("/music/Drifting_In_Aether_130s.wav");
+    audioRef.current = new Audio("/music/Drifting_In_Aether_130s.mp3");
     audioRef.current.loop = true;
 
     // Clean up on unmount

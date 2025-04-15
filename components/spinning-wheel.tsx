@@ -104,7 +104,7 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
 
   useEffect(() => {
     if (isSpinSound) {
-      seTicTicSound(new Audio("/effects/tick.wav"));
+      seTicTicSound(new Audio("/effects/tick.mp3"));
     }
   }, [isSpinSound]);
 
@@ -117,7 +117,7 @@ const SpinningWheel: React.FC<SpinWheelProps> = ({
   useEffect(() => {
     if (isSpinSound && ticTicSound) {
       if (isStarted) {
-        const newSound = new Audio("/effects/tick.wav"); // Create a new audio instance
+        const newSound = new Audio("/effects/tick.mp3"); // Create a new audio instance
         newSound.loop = true;
         newSound.currentTime = 0; // Reset to the beginning
         newSound.play();

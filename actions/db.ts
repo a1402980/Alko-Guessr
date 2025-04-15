@@ -1,9 +1,9 @@
 "use server";
 
 import { sql } from "@/lib/db";
-import { productsSchema } from "@/schemas/product";
+import { formattedTypesSchema, productsSchema } from "@/schemas/product";
 import { scoresSchema } from "@/schemas/scrore";
-import { Product } from "@/types/product";
+import { FormattedType, Product } from "@/types/product";
 import { Score } from "@/types/score";
 
 type GetProductsParams = {
@@ -23,21 +23,28 @@ export async function getProducts({
   offset = 0,
   bottleSize,
 }: GetProductsParams): Promise<Product[]> {
-  let query = sql`SELECT * FROM products WHERE 1=1`;
+  let query = sql`
+    SELECT p.*, t.name as type
+    FROM products p
+    INNER JOIN types t ON p.type_id = t.id
+    WHERE 1=1
+  `;
 
   if (category) {
-    query = sql`${query} AND type = ${category}`;
+    query = sql`${query} AND t.name = ${category}`;
   }
 
   if (priceMin !== undefined) {
-    query = sql`${query} AND price >= ${priceMin}`;
+    query = sql`${query} AND p.price >= ${priceMin}`;
   }
 
   if (priceMax !== undefined) {
-    query = sql`${query} AND price <= ${priceMax}`;
+    query = sql`${query} AND p.price <= ${priceMax}`;
   }
 
-  if (bottleSize) query = sql`${query} AND bottle_size = ${bottleSize}`;
+  if (bottleSize) {
+    query = sql`${query} AND p.bottle_size = ${bottleSize}`;
+  }
 
   query = sql`${query} ORDER BY RANDOM() LIMIT ${limit} OFFSET ${offset}`;
 
@@ -54,11 +61,17 @@ export async function getProductsByCategory(
 }
 
 // Helper function to get all categories
-export async function getAllCategories(): Promise<string[]> {
-  const result =
-    await sql`SELECT DISTINCT type FROM products WHERE type IS NOT NULL AND type != '' ORDER BY type asc`;
+export async function getAllCategories(): Promise<FormattedType[]> {
+  const result = await sql`
+    SELECT t.*
+    FROM types t
+    INNER JOIN products p ON t.id = p.type_id
+    WHERE t.name IS NOT NULL AND t.name != ''
+    GROUP BY t.id
+    ORDER BY t.name ASC
+  `;
 
-  return result.map((row: any) => row.type);
+  return formattedTypesSchema.parse(result);
 }
 
 export async function getAllBottleSizes(): Promise<string[]> {

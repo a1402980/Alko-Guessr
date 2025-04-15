@@ -1,10 +1,10 @@
 import * as XLSX from "xlsx";
 import puppeteer from "puppeteer-extra";
 import { sql } from "../db";
-import { IntegrationProduct } from "@/types/product";
+import { FormattedType, IntegrationProduct } from "@/types/product";
 import fs from "fs";
 import path from "path";
-import { productFromAlkoData } from "./alko";
+import { productFromAlkoData, typesFromProducts } from "./alko";
 import chromium from "@sparticuz/chromium";
 import puppeteerCore from "puppeteer-core";
 
@@ -28,7 +28,7 @@ export async function fetchAndProcessAlkoData() {
     const worksheet = workbook.Sheets[sheetName];
 
     // Convert to JSON
-    const data = XLSX.utils.sheet_to_json(worksheet);
+    const data = XLSX.utils.sheet_to_json(worksheet, { range: 3 });
 
     console.log(`Processed ${data.length} products from Alko data`);
 
@@ -36,6 +36,12 @@ export async function fetchAndProcessAlkoData() {
     const products = data.map(productFromAlkoData);
 
     console.log(`Found ${products.length} valid products`);
+
+    const types = typesFromProducts(products);
+
+    console.log(`${types.length} types found from products`);
+
+    await insertTypesIntoDatabase(types);
 
     // Insert products into the database
     await insertProductsToDatabase(products);
@@ -51,6 +57,29 @@ export async function fetchAndProcessAlkoData() {
       error: error instanceof Error ? error.message : "Unknown error",
     };
   }
+}
+
+export async function insertTypesIntoDatabase(types: FormattedType[]) {
+  console.log("inserting types into database...");
+  await sql.transaction((tx) => {
+    const queries = types.map(
+      (type) => tx`
+            INSERT INTO types (
+              name, 
+              name_en,
+              slug
+            ) 
+            VALUES (
+              ${type.name}, 
+              ${type.name_en}, 
+              ${type.slug}
+            )
+            ON CONFLICT (slug) 
+            DO NOTHING
+          `
+    );
+    return queries;
+  });
 }
 
 export async function insertProductsToDatabase(products: IntegrationProduct[]) {
@@ -76,7 +105,6 @@ export async function insertProductsToDatabase(products: IntegrationProduct[]) {
             price_per_liter,
             is_new,
             price_order_code,
-            type,
             sub_type,
             special_group,
             country,
@@ -94,7 +122,8 @@ export async function insertProductsToDatabase(products: IntegrationProduct[]) {
             energy,
             selection,
             ean,
-            image_url
+            image_url,
+            type_id
           ) 
           VALUES (
             ${product.product_id}, 
@@ -105,7 +134,6 @@ export async function insertProductsToDatabase(products: IntegrationProduct[]) {
             ${product.price_per_liter},
             ${product.is_new},
             ${product.price_order_code},
-            ${product.type},
             ${product.sub_type},
             ${product.special_group},
             ${product.country},
@@ -123,7 +151,8 @@ export async function insertProductsToDatabase(products: IntegrationProduct[]) {
             ${product.energy},
             ${product.selection},
             ${product.ean},
-            ${product.image_url}
+            ${product.image_url},
+            (SELECT id FROM types WHERE name = ${product.type})
           )
           ON CONFLICT (product_id) 
           DO UPDATE SET 
@@ -134,7 +163,6 @@ export async function insertProductsToDatabase(products: IntegrationProduct[]) {
             price_per_liter = EXCLUDED.price_per_liter,
             is_new = EXCLUDED.is_new,
             price_order_code = EXCLUDED.price_order_code,
-            type = EXCLUDED.type,
             sub_type = EXCLUDED.sub_type,
             special_group = EXCLUDED.special_group,
             country = EXCLUDED.country,
@@ -153,7 +181,8 @@ export async function insertProductsToDatabase(products: IntegrationProduct[]) {
             selection = EXCLUDED.selection,
             ean = EXCLUDED.ean,
             image_url = EXCLUDED.image_url,
-            updated_at = NOW()
+            updated_at = NOW(),
+            type_id = (SELECT id FROM types WHERE name = ${product.type})
         `
       );
       return queries;
