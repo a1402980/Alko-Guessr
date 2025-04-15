@@ -12,7 +12,6 @@ import {
 import { Score } from "@/types/score";
 
 export function LeaderboardTable({ scores }: { scores: Score[] }) {
-  console.log("scores", scores);
   return (
     <Table>
       <TableHeader>
@@ -28,7 +27,7 @@ export function LeaderboardTable({ scores }: { scores: Score[] }) {
         {scores.map((score, index) => (
           <TableRow key={score.id}>
             <TableCell className="font-medium">{index + 1}</TableCell>
-            <TableCell>{score.name}</TableCell>
+            <TableCell>{score.name ? score.name : <i>Anonymous</i>}</TableCell>
             <TableCell>{score.category}</TableCell>
             <TableCell className="text-right">{score.score}</TableCell>
             <TableCell className="text-right">

@@ -18,3 +18,5 @@ export default async function LeaderboardPage() {
     </main>
   );
 }
+
+export const revalidate = 300; // revalidate every 5 minutes

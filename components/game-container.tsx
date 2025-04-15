@@ -210,9 +210,11 @@ export function GameContainer({ category }: { category?: string }) {
                   </label>
                   <div className="my-2 flex flex-row items-center justify-center gap-2">
                     <input
+                      placeholder="name"
+                      required
                       type="text"
                       name="name"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 h-10"
+                      className="mt-1 px-3 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 h-10"
                     />
                     <Button type="submit" variant={"outline"}>
                       Submit Score <Save />
