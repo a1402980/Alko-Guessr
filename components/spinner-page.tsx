@@ -90,7 +90,7 @@ const SpinnerPage = ({
   return (
     <main className="flex min-h-screen flex-col">
       <Header />
-      <div className="w-full flex flex-col items-center">
+      <div className="flex-1 w-full flex flex-col items-center">
         <div className="container py-8 px-4 md:px-6">
           <div className="flex flex-col items-center gap-4  mb-6">
             <h1 className="text-2xl font-bold tracking-tighter sm:text-3xl md:text-4xl lg:text-5xl">
@@ -193,8 +193,8 @@ const SpinnerPage = ({
               )}
               {!enoughProducts && (
                 <p>
-                  Ei tarpeeksi tuotteita näillä kriteereillä ({products.length}{" "}
-                  kpl)
+                  Not enough products with these criteria ({products.length}{" "}
+                  items)
                 </p>
               )}
             </div>
