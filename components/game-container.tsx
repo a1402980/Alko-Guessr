@@ -223,6 +223,17 @@ export function GameContainer({ category }: { category?: string }) {
     setScoreSubmitted(true);
   }
 
+  if (!loading && (!gameState.options || gameState.options.length === 0)) {
+    return (
+      <div className="flex-1 flex gap-4 flex-col text-center items-center justify-center p-4">
+        <h2 className="text-2xl font-bold">
+          Whoops! Seems like there was an issue when starting the game.
+        </h2>
+        <Button onClick={() => router.push("/")}>Back to Home</Button>
+      </div>
+    );
+  }
+
   if (gameState.gameComplete) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
