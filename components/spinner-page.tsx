@@ -214,7 +214,10 @@ const SpinnerPage = ({
                 <Image
                   fill
                   sizes="(max-width: 768px) 100vw, 400px"
-                  src={selectedProduct.image_url}
+                  src={
+                    selectedProduct.image_url ||
+                    "/placeholder.svg?height=400&width=400"
+                  }
                   alt={selectedProduct.name}
                   className="w-full h-auto rounded object-contain p-2"
                 />
