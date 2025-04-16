@@ -81,7 +81,7 @@ export function CategorySelection() {
               </CardContent>
               <CardFooter>
                 <Link
-                  href={`/play?category=${category.name}`}
+                  href={`/play?category=${category.slug}`}
                   className="w-full"
                 >
                   <Button className="w-full">Play</Button>

@@ -3,38 +3,41 @@ import {
   integrationProductSchema,
 } from "@/schemas/product";
 import { FormattedType, IntegrationProduct } from "@/types/product";
-import { capitalize, uniqBy } from "lodash";
+import { capitalize, compact, uniqBy } from "lodash";
 import slugify from "slugify";
 
 export function productFromAlkoData(data: any): IntegrationProduct {
+  const productId = data["Numero"];
   const mappedData = {
-    product_id: String(data["Numero"] || ""),
-    name: String(data["Nimi"] || ""),
-    manufacturer: String(data["Valmistaja"] || ""),
-    bottle_size: String(data["Pullokoko"] || ""),
-    price: Number.parseFloat(data["Hinta"] || "0"),
-    price_per_liter: Number.parseFloat(data["Litrahinta"] || "0"),
+    product_id: productId,
+    name: data["Nimi"],
+    manufacturer: data["Valmistaja"] || null,
+    bottle_size: data["Pullokoko"] || null,
+    price: Number.parseFloat(data["Hinta"]),
+    price_per_liter: Number.parseFloat(data["Litrahinta"]) || null,
     is_new: (data["Uutuus"] || "") === "uutuus",
-    price_order_code: String(data["Hinnastojärjestyskoodi"] || ""),
-    type: capitalize(String(data["Tyyppi"] || "")),
-    sub_type: String(data["Alatyyppi"] || ""),
-    special_group: String(data["Erityisryhmä"] || ""),
-    country: String(data["Valmistusmaa"] || ""),
-    region: String(data["Alue"] || ""),
-    vintage: String(data["Vuosikerta"] || ""),
-    label_notes: String(data["Etikettimerkintöjä"] || ""),
-    notes: String(data["Huomautus"] || ""),
-    grapes: String(data["Rypäleet"] || ""),
-    description: String(data["Luonnehdinta"] || ""),
-    packaging_type: String(data["Pakkaustyyppi"] || ""),
-    closure_type: String(data["Suljentatyyppi"] || ""),
-    alcohol_percentage: Number.parseFloat(data["Alkoholi-%"] || "0"),
-    acidity: Number.parseFloat(data["Hapot g/l"] || "0"),
-    sugar: Number.parseFloat(data["Sokeri g/l"] || "0"),
-    energy: Number.parseFloat(data["Energia kcal/100 ml"] || "0"),
-    selection: String(data["Valikoima"] || ""),
-    ean: String(data["EAN"] || ""),
-    image_url: `https://images.alko.fi/images/cs_srgb,f_auto,t_medium/cdn/${data["Numero"]}/.jpg`,
+    price_order_code: data["Hinnastojärjestyskoodi"] || null,
+    type: capitalize(data["Tyyppi"]) || null,
+    sub_type: data["Alatyyppi"] || null,
+    special_group: data["Erityisryhmä"] || null,
+    country: data["Valmistusmaa"] || null,
+    region: data["Alue"] || null,
+    vintage: data["Vuosikerta"] || null,
+    label_notes: data["Etikettimerkintöjä"] || null,
+    notes: data["Huomautus"] || null,
+    grapes: data["Rypäleet"] || null,
+    description: data["Luonnehdinta"] || null,
+    packaging_type: data["Pakkaustyyppi"] || null,
+    closure_type: data["Suljentatyyppi"] || null,
+    alcohol_percentage: Number.parseFloat(data["Alkoholi-%"]) || null,
+    acidity: Number.parseFloat(data["Hapot g/l"]) || null,
+    sugar: Number.parseFloat(data["Sokeri g/l"]) || null,
+    energy: Number.parseFloat(data["Energia kcal/100 ml"]) || null,
+    selection: data["Valikoima"] || null,
+    ean: data["EAN"] || null,
+    image_url: productId
+      ? `https://images.alko.fi/images/cs_srgb,f_auto,t_medium/cdn/${productId}/.jpg`
+      : null,
   };
   return integrationProductSchema.parse(mappedData);
 }
@@ -42,7 +45,7 @@ export function productFromAlkoData(data: any): IntegrationProduct {
 export const typesFromProducts = (
   products: IntegrationProduct[]
 ): FormattedType[] => {
-  const uniqueTypes = uniqBy(products, "type").map((p) => p.type);
+  const uniqueTypes = compact(uniqBy(products, "type").map((p) => p.type));
 
   const translationMap: Record<string, string> = {
     Viinijuomat: "Wine Drinks",

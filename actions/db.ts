@@ -1,28 +1,27 @@
 "use server";
 
 import { sql } from "@/lib/db";
+import getProductsParamsSchema from "@/schemas/db";
 import { formattedTypesSchema, productsSchema } from "@/schemas/product";
 import { scoresSchema } from "@/schemas/scrore";
+import { GetProductsParams } from "@/types/db";
 import { FormattedType, Product } from "@/types/product";
 import { Score } from "@/types/score";
 
-type GetProductsParams = {
-  category?: string;
-  priceMin?: number;
-  priceMax?: number;
-  limit?: number;
-  offset?: number;
-  bottleSize?: string;
-};
+export async function getProducts(
+  params: GetProductsParams
+): Promise<Product[]> {
+  const formattedParams = getProductsParamsSchema.parse(params);
+  const {
+    category,
+    categorySlug,
+    priceMin,
+    priceMax,
+    limit = 10,
+    offset = 0,
+    bottleSize,
+  } = formattedParams;
 
-export async function getProducts({
-  category,
-  priceMin,
-  priceMax,
-  limit = 10,
-  offset = 0,
-  bottleSize,
-}: GetProductsParams): Promise<Product[]> {
   let query = sql`
     SELECT p.*, t.name as type
     FROM products p
@@ -32,6 +31,10 @@ export async function getProducts({
 
   if (category) {
     query = sql`${query} AND t.name = ${category}`;
+  }
+
+  if (categorySlug) {
+    query = sql`${query} AND t.slug = ${categorySlug}`;
   }
 
   if (priceMin !== undefined) {
@@ -53,11 +56,11 @@ export async function getProducts({
 }
 
 export async function getProductsByCategory(
-  category?: string,
+  categorySlug?: string,
   limit = 10,
   offset = 0
 ): Promise<Product[]> {
-  return getProducts({ category: category, offset, limit });
+  return getProducts({ categorySlug, offset, limit });
 }
 
 // Helper function to get all categories
@@ -83,21 +86,27 @@ export async function getAllBottleSizes(): Promise<string[]> {
 export async function submitScore(
   name: string,
   score: number,
-  category?: string
+  typeSlug?: string
 ): Promise<void> {
   await sql`
-    INSERT INTO leaderboards (name, score, category)
-    VALUES (${name}, ${score}, ${category ?? null})
+    INSERT INTO leaderboards (name, score, type_id)
+    VALUES (${name}, ${score}, ${
+    typeSlug
+      ? sql`(SELECT id from types WHERE slug = ${typeSlug})`
+      : sql`${null}`
+  })
   `;
 }
 
 export async function getTopScores(
-  category?: string,
+  type?: string,
   limit = 10
 ): Promise<Score[]> {
   const scores = await sql`
-    SELECT id, name, score, category, created FROM leaderboards
-    ${category ? sql`WHERE category = ${category}` : sql``}
+    SELECT l.*, t.name_en as type
+    FROM leaderboards l
+    LEFT JOIN types t ON t.id = l.type_id
+    ${type ? sql`WHERE t.name = ${type}` : sql``}
     ORDER BY score DESC
     LIMIT ${limit}
   `;

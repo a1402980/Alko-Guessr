@@ -28,7 +28,7 @@ export function LeaderboardTable({ scores }: { scores: Score[] }) {
           <TableRow key={score.id}>
             <TableCell className="font-medium">{index + 1}</TableCell>
             <TableCell>{score.name ? score.name : <i>Anonymous</i>}</TableCell>
-            <TableCell>{score.category}</TableCell>
+            <TableCell>{score.type}</TableCell>
             <TableCell className="text-right">{score.score}</TableCell>
             <TableCell className="text-right">
               {score.created
